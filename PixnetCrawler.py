@@ -47,16 +47,17 @@ class PixnetCrawler:
         self._result = ''
 
 
-    async def _connect(self, url, proxy=None, raw=False, which_site=False):
+    async def _connect(self, url, proxy=None, raw=False, which_site=False, semaphore=None):
         print(url)
         soup = ''
         status = 0
         async with aiohttp.ClientSession(read_timeout=50) as session:
             try:
-                async with session.get(url, proxy=proxy) as response:
-                    source_code = await response.text('utf-8')
-                    status = response.status
-                    soup = source_code if raw else BeautifulSoup(source_code, 'lxml')
+                async with semaphore:
+                    async with session.get(url, proxy=proxy) as response:
+                        source_code = await response.text('utf-8')
+                        status = response.status
+                        soup = source_code if raw else BeautifulSoup(source_code, 'lxml')
             except Exception as e:
                 print(e)
                 print('ERROR!!!!!!!!!!!!!!')
@@ -94,10 +95,10 @@ class PixnetCrawler:
         return True    # error
 
 
-    async def _transform_hares(self, urls):
+    async def _transform_hares(self, urls, semaphore):
         tasks = []
         for url in urls:
-            task = asyncio.ensure_future(self._connect(url, raw=True))
+            task = asyncio.ensure_future(self._connect(url, raw=True, semaphore=semaphore))
             tasks.append(task)
         await asyncio.gather(*tasks)
 
@@ -112,11 +113,11 @@ class PixnetCrawler:
         return transformed_links
 
 
-    async def get_article_links(self):
+    async def get_article_links(self, semaphore):
         tasks = []
         for page in range(1, self._maxPage+1):
             url = self._url + str(page)
-            task = asyncio.ensure_future(self._connect(url))
+            task = asyncio.ensure_future(self._connect(url, semaphore=semaphore))
             tasks.append(task)
         await asyncio.gather(*tasks)
 
@@ -132,7 +133,7 @@ class PixnetCrawler:
                     hares_links.append(l)
                 else:
                     self._urls.append(l)
-        self._urls.extend(await self._transform_hares(hares_links))
+        self._urls.extend(await self._transform_hares(hares_links, semaphore))
 
 
     def _clean(self, texts, no_punc=False):
@@ -167,7 +168,7 @@ class PixnetCrawler:
         # return title + content               # without symbols
 
 
-    async def get_contents(self, recon=0):
+    async def get_contents(self, recon=0, semaphore=None):
         if recon < 0:
             raise ValueError('Reconnection time needs to be positive!')
         urls = self._urls
@@ -187,7 +188,7 @@ class PixnetCrawler:
 
             tasks = []
             for url in urls:
-                task = asyncio.ensure_future(self._connect(url, proxy=proxy, which_site=True))
+                task = asyncio.ensure_future(self._connect(url, proxy=proxy, which_site=True, semaphore=semaphore))
                 tasks.append(task)
             await asyncio.gather(*tasks)
 
@@ -212,9 +213,10 @@ class PixnetCrawler:
 
 
     async def crawl(self):
+        semaphore = asyncio.Semaphore(1000)
         print('Start crawling for ' + self._keyword + '...')
-        await self.get_article_links()
-        await self.get_contents(3)   # set max reconnection times to 3
+        await self.get_article_links(semaphore)
+        await self.get_contents(3, semaphore)   # set max reconnection times to 3
         self.output()
 
 
