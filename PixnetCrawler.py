@@ -1,14 +1,13 @@
 import re
 import time
 import sys
+import argparse
 import asyncio
 import aiohttp
 import ProxyPool
 import html2text
 from bs4 import BeautifulSoup
 from urllib.parse import unquote
-from aiohttp.client_exceptions import (ServerDisconnectedError, ClientConnectorError,
-                                       ClientOSError, ClientResponseError)
 
 ordinal = {1: 'first', 2: 'second', 3: 'third', 4: 'fourth', 5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth', 9: 'ninth', 10: 'tenth'}
 
@@ -24,13 +23,17 @@ class PixnetCrawler:
     { 0: 'Pixnet', 1: 'Hares }
     """
 
-    def __init__(self, maxPage=1, keyword='台南 美食'):
-        self._maxPage = maxPage
-        self._keyword = keyword
+    def __init__(self):
+        self._start = 0
+        self._end = 0
+        self._keyword = ''
+        self._timeout = 0
+        self._recon = 0
+        self._filename = ''
         self._urls = []
         self._re_urls = []
         self._pool = ProxyPool.ProxyPool()
-        self._url = 'https://www.pixnet.net/searcharticle?q={:s}&page='.format(self._keyword.replace(' ', '+'))
+        self._searchURL = ''
         self._punc = ',.!?:;~\'\"，。！？：；、～…⋯()<>「」［］【】＜＞〈〉《》（）﹙﹚『』«»“”’{}\\[\\]'   # the '[]' needs to be the last one
         self._stop_words = 'ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ \
                             ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ \
@@ -41,9 +44,74 @@ class PixnetCrawler:
         self._sw_no_punc = re.sub('([{}])'.format(self._punc), '', self._stop_words)
         self._sw_dict = {w : True for w in self._stop_words}
         self._sw_no_punc_dict = {w : True for w in self._sw_no_punc}
+        self._websites = {'Unknown': -1, 'Pixnet': 0, 'Hares': 1}
         self._title_tags = ['title', 'entry-title']                       # {0: 'Pixnet', 1: 'Hares}
         self._content_tags = ['article-content-inner', 'entry-content']   # {0: 'Pixnet', 1: 'Hares}
         self._result = ''
+
+
+    @property
+    def start(self, value):
+        return self._start
+
+
+    @property
+    def end(self, value):
+        return self._end
+
+
+    @property
+    def keyword(self, value):
+        return self._keyword
+
+    
+    @property
+    def timeout(self, value):
+        return self._timeout
+
+
+    @property
+    def recon(self, value):
+        return self._recon
+
+
+    @property
+    def filename(self, value):
+        return self._filename
+
+
+    @start.setter
+    def start(self, value):
+        self._start = value
+
+
+    @end.setter
+    def end(self, value):
+        self._end = value
+
+
+    @keyword.setter
+    def keyword(self, value):
+        self._keyword = value
+
+    
+    @timeout.setter
+    def timeout(self, value):
+        self._timeout = value
+
+
+    @recon.setter
+    def recon(self, value):
+        self._recon = value
+
+
+    @filename.setter
+    def filename(self, value):
+        self._filename = value
+
+
+    def set_searchURL(self):
+        self._searchURL = 'https://www.pixnet.net/searcharticle?q={:s}&page='.format(self._keyword.replace(' ', '+'))
 
 
     async def _fetch(self, session, url, proxy=None, raw=False, which_site=False):
@@ -53,27 +121,35 @@ class PixnetCrawler:
         :returns: a tuple
         """
         print(url)
-        soup = ''
-        status = 0
-        try:
-            async with session.get(url, proxy=proxy) as response:
-                source_code = await response.text('utf-8')
-                status = response.status
-                soup = source_code if raw else BeautifulSoup(source_code, 'lxml')
-        except Exception as e:
-            print('Connection error: ' + str(e))
-            soup = None
-        finally:
-            if which_site:
-                if 'hare' in url:  # {0: 'Pixnet', 1: 'Hares}
-                    site = 1
-                elif 'pixnet' in url:
-                    site = 0
-                else:
-                    site = -1
-                return (url, soup, status, site)
-            else:
-                return (url, soup, status)
+
+        if 'hare' in url:   # {'Unknown': -1, 'Pixnet': 0, 'Hares': 1}
+            site = self._websites['Hares']
+        elif 'pixnet' in url:
+            site = self._websites['Pixnet']
+        else:
+            site = self._websites['Unknown']
+
+        result = None
+        count = 1
+        while count <= 2:
+            soup = ''
+            status = 0
+            try:
+                async with session.get(url, proxy=proxy) as response:
+                    source_code = await response.text('utf-8')
+                    status = response.status
+                    soup = source_code if raw else BeautifulSoup(source_code, 'lxml')
+            except Exception as e:
+                print('Connection error: ' + str(e))
+                soup = None
+            finally:
+                result = (url, soup, status, site) if which_site else (url, soup, status)
+                if status != 0:
+                    return result
+            if 'searcharticle' not in url:
+                count += 1
+        result = (url, soup, status, site) if which_site else (url, soup, status)
+        return result
 
 
     async def _bound_fetch(self, semaphore, session, url, proxy=None, raw=False, which_site=False):
@@ -100,8 +176,8 @@ class PixnetCrawler:
         """
         tasks = []
         semaphore = asyncio.Semaphore(1000)   # use Semaphore to avoid limitation number of Windows open files
-        async with aiohttp.ClientSession(read_timeout=25) as session:   # read_timeout is the acceptable time for waiting for the server's response
-            for url in urls:
+        async with aiohttp.ClientSession(read_timeout=self._timeout) as session:   # read_timeout is the acceptable time
+            for url in urls:                                                       # for waiting for the server's response
                 task = asyncio.ensure_future(self._bound_fetch(semaphore, session, url, proxy, raw, which_site))
                 tasks.append(task)
             await asyncio.gather(*tasks)
@@ -159,8 +235,8 @@ class PixnetCrawler:
         :returns: a list of URLs
         """
         urls = []
-        for page in range(1, self._maxPage+1):
-            urls.append(self._url + str(page))
+        for page in range(self._start, self._end+1):
+            urls.append(self._searchURL + str(page))
         result_list = await self._connect(urls)
 
         self._urls = []
@@ -178,21 +254,19 @@ class PixnetCrawler:
         self._urls.extend(await self._transform_hares(hares_links))
 
 
-    async def get_contents(self, recon=0):
+    async def get_contents(self):
         """
         Get the contents of all articles from the search results.
-        It will repeat for recon + 1 times so if recon is 0, it will
+        It will repeat for _recon + 1 times. Thus, if _recon is 0, it will
         terminate after the initial connection is finished.
         The result will be stored in the '_result' variable.
-
-        :param recon: Reconnection times, needs to be a natural number.
         """
-        if recon < 0:
+        if self._recon < 0:
             raise ValueError('Reconnection time needs to be positive!')
         urls = self._urls
-        proxy_list = await self._pool.get_proxies(recon + 1)
+        proxy_list = await self._pool.get_proxies(self._recon + 1)
         
-        for count in range(recon + 1):
+        for count in range(self._recon + 1):
             proxy = proxy_list[count]
             if count > 0:     # perform reconnection
                 if not self._re_urls:
@@ -201,7 +275,7 @@ class PixnetCrawler:
                 else:
                     if count == 1:
                         print('Reconnecting...')
-                    print('\n\n----------------------------------------------------------')
+                    print('\n----------------------------------------------------------')
                     print(ordinal[count].capitalize() + ' reconnection...\n')
                     urls = self._re_urls
 
@@ -213,7 +287,7 @@ class PixnetCrawler:
                 if not self._error(url, soup, status, site, True):
                     self._result += self._get_plain_text(url, soup, site)
             fail_num = len(self._re_urls)
-            if count == recon:
+            if count == self._recon:
                 print('Failed to crawl ' + str(fail_num) + (' website.' if fail_num==1 else ' websites.'))
 
         self._result = re.sub(r'\s+', '', self._result)   # trim whitespaces
@@ -275,18 +349,19 @@ class PixnetCrawler:
 
 
     def output(self):
-        with open(self._keyword + '.txt', 'w', encoding='UTF-8') as f:
+        with open(self._filename, 'w', encoding='UTF-8') as f:
             f.write(self._result)
         print('\n----------------------------------------------------------')
-        print('Successfully writed output file: \"{}\"'.format(self._keyword + '.txt'))
+        print('Successfully writed output file: \"{}\"'.format(self._filename))
 
 
     async def crawl(self):
+        self.set_searchURL()
         print('Start crawling for ' + self._keyword + '...')
         start = time.time()
         await self.get_article_links()
         link = time.time()
-        await self.get_contents(3)   # set max reconnection times to 3
+        await self.get_contents()
         content = time.time()
         self.output()
         output = time.time()
@@ -298,13 +373,54 @@ class PixnetCrawler:
         print('Total: ' + str(round(output - start, 2)) + ' sec')
 
 
+    def process_command(self):
+        parser = argparse.ArgumentParser(description='This is an asyncronous crawler for Pixnet\'s blog posts.')
+        g1 = parser.add_argument_group('search options')
+        g1.add_argument('-k', '--keyword', type=str, required=True, help='Keywords to search on Pixnet\'s blog')
+        g1.add_argument('-s', '--start', type=int, default=1, help='The starting page index for crawling, default is 1.')
+        g1.add_argument('-e', '--end', type=int, default=10, help='The ending page index for crawling, default is 10.')
+        g2 = parser.add_argument_group('time related options')
+        g2.add_argument('-t', '--timeout', type=int, default=25, help='The acceptable time for the server\'s response.')
+        g2.add_argument('-r', '--recon', type=int, default=3, help='The reconnection times if reconnection is needed.')
+        g3 = parser.add_argument_group('output options')
+        g3.add_argument('-o', '--output', type=str, help='The name of the output file.')
+        return parser.parse_args()
+
+    def show_options(self):
+        print('\n----------------------------------------------------------')
+        print('{:20}{}{}'.format('OPTIONS', '| ', 'VALUES'))
+        print('----------------------------------------------------------')
+        print('{:20}{}{}'.format('keyword', '| ', self._keyword))
+        print('{:20}{}{}'.format('start page', '| ', self._start))
+        print('{:20}{}{}'.format('end page', '| ', self._end))
+        print('{:20}{}{}'.format('timeout', '| ', self._timeout))
+        print('{:20}{}{}'.format('reconnection times', '| ', self._recon))
+        print('{:20}{}{}'.format('output filename', '| ', self._filename))
+        print('\n----------------------------------------------------------')
+
+
+async def main():
+    pc = PixnetCrawler()
+    args = pc.process_command()
+    if args.keyword:
+        pc.keyword = args.keyword
+    if args.start:
+        pc.start = args.start
+    if args.end:
+        pc.end = args.end
+    if args.timeout:
+        pc.timeout = args.timeout
+    if args.recon:
+        pc.recon = args.recon
+    if args.output:
+        pc.filename = args.output
+    else:
+        pc.filename = args.keyword + '.txt'
+    pc.show_options()
+    await pc.crawl()
+
+
 if __name__ == '__main__':
-    try:
-        int(sys.argv[1])
-    except ValueError as e:
-        print(type(e).__name__ + ': argv[1] must be in type \'int\'')
-        sys.exit()
     loop = asyncio.get_event_loop()
-    pc = PixnetCrawler(int(sys.argv[1]), ' '.join(sys.argv[2:]))
-    future = asyncio.ensure_future(pc.crawl())
+    future = asyncio.ensure_future(main())
     loop.run_until_complete(future)
