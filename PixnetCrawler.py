@@ -195,12 +195,12 @@ class PixnetCrawler:
         """
         unexpect = False
         if status == 0:
-            print('Unable to connect to website:' + url)
+            print('Unable to connect to website: ' + url)
         elif status >= 400 or soup is None:
-            print(str(status) + ' | Can\'t open website:' + url)
+            print(str(status) + ' | Can\'t open website: ' + url)
         else:
             if site < 0:
-                print("Unexpected website:" + url)
+                print('Unexpected website: ' + url)
                 unexpect = True
             else:
                 return False    # No error
@@ -309,8 +309,7 @@ class PixnetCrawler:
         # title = h.handle(title)
         # content = h.handle(content)
         if title == None or content == None:
-            print("Different website structure:")
-            print(url)
+            print('Different website structure: ' + url)
             return ''
         return self._clean(title + content, no_punc=True)    # with symbols
         # return title + content               # without symbols
