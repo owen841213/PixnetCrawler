@@ -1,7 +1,8 @@
 # PixnetCrawler
+## Introduction
 This is a crawler for [Pixnet's blog posts](https://www.pixnet.net/blog).
 It crawls the text in the title and the articles of each search results.
-Proxies are used during the crawling to avoid the resource limitation from the server.
+[Proxies](https://free-proxy-list.net/) are used during the crawling to avoid the resource limitation from the server.
 
 ## Getting Started
 ### Prerequisites
@@ -169,3 +170,7 @@ There multiple arguments that are available. It can be generally classify to thr
       python PixnetCrawler.py -k "Deep Learning" -o "deep learning.txt"
       ```
       
+## Issues
+
+The program uses [free proxies](https://free-proxy-list.net/) provided for the public, therefore,
+the proxies we get may not be stable and may influence our connection during crawling.
