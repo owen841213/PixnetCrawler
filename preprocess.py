@@ -3,6 +3,7 @@ import jieba
 import jieba.analyse
 import fp_growth_py3 as fp
 
+
 def split_into_word(article, output='list'):
     """
     Split an article into words.
@@ -38,7 +39,8 @@ def clean(trans, sw_path):
     l = []
     with open(sw_path, 'r', encoding='UTF-8') as f:
         for line in f.readlines():
-            sw_dict[line.strip()] = True
+            if '#' not in line:
+                sw_dict[line.strip()] = True
     for tran in trans:
         for t in tran:
             if t not in sw_dict:
@@ -62,30 +64,6 @@ def rm_dup(trans):
                 temp.add(word)
         l.append(temp)
     return l   # l: [{'a', 'b', 'c'}, {'dd, 'ff'}, {'haha', 'eee'}]
-
-
-def convert(s):
-    l = []
-    for item in s.split():
-        l.append([item])
-    return l
-
-
-def rm_stop_words(word_list, sw_path, output='list'):
-    sw_dict = {}
-    l = []
-    s = ''
-    with open(sw_path, 'r', encoding='UTF-8') as f:
-        for line in f.readlines():
-            sw_dict[line.strip()] = True
-    for w in word_list:
-        if w not in sw_dict:
-            l.append(w)
-            s += (w + ' ')
-    if output == 'list':
-        return l
-    elif output == 'str':
-        return s
 
 
 def food_dict(filename):
@@ -137,7 +115,7 @@ def output_result(result, filename):
 if __name__ == '__main__':
 
     print('Reading input file...')
-    articles = input('台南 美食.txt')
+    articles = input('台南 美食(100頁).txt')
 
     print('Splitting...')
     s = split_into_word(articles, 'str')
@@ -145,9 +123,9 @@ if __name__ == '__main__':
     print('Converting to transactions...')
     trans = text2trans(s)
 
-    sw_path = 'C:\\Program Files\\Python36\\Lib\\site-packages\\jieba\\stop_words2.txt'  # stop_words2.txt might be better
+    sw_path = 'stop_words.txt'
     print('Cleaning symbols...')
-    # trans = clean(trans, sw_path)  # remove stop words
+    trans = clean(trans, sw_path)   # remove stop words
     trans = rm_dup(trans)
 
     print('Finding frequent patterns...')
@@ -159,8 +137,8 @@ if __name__ == '__main__':
 
 
     print('Writing output file...')
-    output(fp, 'fp台南.txt')
-    output_result(result, 'fp台南(only food).txt')
+    output(fp, 'fp台南(100頁).txt')
+    output_result(result, 'fp台南(100頁)(only food).txt')
     
 
     print('Done!')
