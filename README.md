@@ -145,7 +145,7 @@ There multiple arguments that are available. It can be generally classify to thr
    
    3. output options:
       
-      These arguments relate to your output files.
+      These arguments are related to your output files.
       
       `-o OUTPUT, --output OUTPUT`:
       OUTPUT is the name of your output file.
