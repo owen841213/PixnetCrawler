@@ -121,7 +121,8 @@ class PixnetCrawler:
         :returns: a tuple
         """
         print(url)
-
+        result = None
+        site = None
         if 'hare' in url:   # {'Unknown': -1, 'Pixnet': 0, 'Hares': 1}
             site = self._websites['Hares']
         elif 'pixnet' in url:
@@ -129,7 +130,6 @@ class PixnetCrawler:
         else:
             site = self._websites['Unknown']
 
-        result = None
         count = 1
         while count <= 2:
             soup = ''
@@ -396,7 +396,7 @@ class PixnetCrawler:
         print('{:20}{}{}'.format('timeout', '| ', self._timeout))
         print('{:20}{}{}'.format('reconnection times', '| ', self._recon))
         print('{:20}{}{}'.format('output filename', '| ', self._filename))
-        print('\n----------------------------------------------------------')
+        print('----------------------------------------------------------\n')
 
 
 async def main():
@@ -417,7 +417,16 @@ async def main():
     else:
         pc.filename = args.keyword + '.txt'
     pc.show_options()
-    await pc.crawl()
+    print('Press ENTER to continue. Otherwise, press \'!\' to exit.')
+    while True:
+        k = input()
+        if k == '':
+            await pc.crawl()
+            return
+        elif k == '!':
+            sys.exit()
+        else:
+            print('Only ENTER and \'!\' are acceptable.')
 
 
 if __name__ == '__main__':
