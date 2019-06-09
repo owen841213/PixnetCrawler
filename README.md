@@ -186,11 +186,11 @@ There multiple arguments that are available. It can be generally classify to thr
 
 ## Issues
 
-The program uses [free proxies](https://free-proxy-list.net/) provided for the public, therefore,
-the proxies we get may not be stable and may have an influence on our connection quality.
+The program uses [free proxies](https://free-proxy-list.net/) provided for the public. Therefore,
+the proxies we get may not be stable, decreasing our connection quality.
 
 When the program finishes cralwling, it will print out the number of websites that couldn't be connected successfully.
 
 ![alt text](https://raw.githubusercontent.com/owen841213/PixnetCrawler/master/images/failed_websites.PNG "Failed websites number")
 
-If the number of the failed websites are unusually large (like crawling 1000 websites with 928 failure), try to run the program again since the problem may be caused by sending requests using unstable proxies.
+If the number of the failed websites are unusually large (say crawling 1000 websites with 928 failure), try to run the program again since the problem may be caused by sending requests using unstable proxies.
