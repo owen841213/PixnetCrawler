@@ -28,6 +28,8 @@ To get started, clone the repository to your machine.
 After that, set the arguments for your search following the tutorial down below.
 
 ## Usage
+
+### Help page
 At first, you can check out for the available commands by typing `-h`.
 
 **command**
@@ -64,6 +66,8 @@ output options:
                         The name of the output file.
 ```
 
+### Arguments
+
 There multiple arguments that are available. It can be generally classify to three groups.
 
    1. search options:
@@ -76,7 +80,7 @@ There multiple arguments that are available. It can be generally classify to thr
       
       **example**
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning"
       ```
       
@@ -87,7 +91,7 @@ There multiple arguments that are available. It can be generally classify to thr
       
       **example**
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -s 5
       ```
       
@@ -98,7 +102,7 @@ There multiple arguments that are available. It can be generally classify to thr
       
       **example**
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -e 20
       ```
       
@@ -112,7 +116,7 @@ There multiple arguments that are available. It can be generally classify to thr
       
       **example**
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -t 10
       ```
       
@@ -129,13 +133,13 @@ There multiple arguments that are available. It can be generally classify to thr
       
       If you don't need reconnection, set the argument to 0.
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -r 0
       ```
       
       Otherwise, set it to the value you want.
       
-      ```
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -r 5
       ```
    
@@ -152,25 +156,41 @@ There multiple arguments that are available. It can be generally classify to thr
 
       **example**
       
-      ```python
+      ```bash
       # the output file is "Deep Learning.txt"
       python PixnetCrawler.py -k "Deep Learning"
       ```
       
       **example**
       
-      ```python
+      ```bash
       python PixnetCrawler.py -k "Deep Learning" -o deep_learning.txt
       ```
       
       **example**
       
-      ```python
+      ```bash
       # enclose filename with quotes if spaces exists
       python PixnetCrawler.py -k "Deep Learning" -o "deep learning.txt"
       ```
       
+### Show options
+
+   After setting up the arguments, run your command to start executing the crawler.
+   Initially, it will display all options on the screen for you to double check.
+   
+   ![alt_text](https://raw.githubusercontent.com/owen841213/PixnetCrawler/master/images/show_options.PNG "Show all options")
+   
+   If there's no misconfiguration, press ENTER to continue.
+   Otherwise, you'll need to stop the program and set up the proper arguments again.
+
 ## Issues
 
 The program uses [free proxies](https://free-proxy-list.net/) provided for the public, therefore,
-the proxies we get may not be stable and may influence our connection during crawling.
+the proxies we get may not be stable and may have an influence on our connection quality.
+
+When the program finishes cralwling, it will print out the number of websites that couldn't be connected successfully.
+
+![alt text](https://raw.githubusercontent.com/owen841213/PixnetCrawler/master/images/failed_websites.PNG "Failed websites number")
+
+If the number of the failed websites are unusually large (like crawling 1000 websites with 928 failure), try to run the program again since the problem may be caused by sending requests using unstable proxies.
