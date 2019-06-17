@@ -1,6 +1,6 @@
 # PixnetCrawler
 ## Introduction
-This is a  crawler for [Pixnet's blog posts](https://www.pixnet.net/blog).
+This is an asynchronous crawler for [Pixnet's blog posts](https://www.pixnet.net/blog).
 It crawls the text in the title and the articles of each search results.
 [Proxies](https://free-proxy-list.net/) are used during the crawling to avoid the resource limitation from the server.
 
